@@ -1,11 +1,20 @@
 use std::env;
+use ez_ffmpeg::{FfmpegContext, FfmpegScheduler};
+use serenity::{
+    async_trait,
+    model::{channel::Message, gateway::Ready},
+    prelude::*,
+};
 
-use serenity::async_trait;
-use serenity::model::channel::Message;
-use serenity::model::gateway::Ready;
-use serenity::prelude::*;
+const MSG_PREFIX: &str = ".g";
 
 struct Handler;
+
+// return file path?
+// use the ffmpeg context builder in here maybe
+pub fn ffmpeg_conv_to_gif() {
+
+}
 
 #[async_trait]
 impl EventHandler for Handler {
@@ -14,11 +23,24 @@ impl EventHandler for Handler {
     // Event handlers are dispatched through a threadpool, and so multiple events can be
     // dispatched simultaneously.
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.content == "!ping" {
-            // Sending a message can fail, due to a network error, an authentication error, or lack
-            // of permissions to post in the channel, so log to stdout when some error happens,
-            // with a description of it.
-            if let Err(why) = msg.reply_ping(&ctx.http, "Pong!").await {
+        let mut gif_builder = FfmpegContext::builder();
+        let mut out: String = format!("");
+        let msg_args = msg.content.split(" ").collect::<Vec<_>>();
+
+        if msg_args[0] == MSG_PREFIX {
+            match msg_args[1] {
+                //"c" => { /* check if this is a reply to an image; if not do nothing */}
+                //"a" => { /* add this to an alias group*/}
+                "help" => {
+                    out = format!("```diff\n- help menu in progress... come back later! -\n```")
+                }
+                "c"|_ => {
+                    out = format!(
+                        "inacessible or unknown command;\n type `.g help` to see available commands :3"
+                    )
+                }
+            }
+            if let Err(why) = msg.reply_ping(&ctx.http, out.as_str()).await {
                 println!("Error sending message: {why:?}");
             }
         }
@@ -45,8 +67,10 @@ async fn main() {
 
     // Create a new instance of the Client, logging in as a bot. This will automatically prepend
     // your bot token with "Bot ", which is a requirement by Discord for bot users.
-    let mut client =
-        Client::builder(&token, intents).event_handler(Handler).await.expect("Err creating client");
+    let mut client = Client::builder(&token, intents)
+        .event_handler(Handler)
+        .await
+        .expect("Err creating client");
 
     // Finally, start a single shard, and start listening to events.
     //
